@@ -18,7 +18,10 @@ public class WordCount{
 	/*
 	* Using a TreeMap rather than a HashMap to more easily
 	* store case independent strings with the constructor
-	* which takes a comparator as a constructor.
+	* which takes a comparator as a constructor. The speed 
+	* tradeoff by using TreeMap instead of HashMap allows 
+	* the program to more easily seperate words. We still
+	* get O(log n) time for get and put
 	*/
 	private TreeMap<String, Integer> wordCount;
 	
