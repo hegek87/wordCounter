@@ -4,13 +4,13 @@
 * the number of times a given word occurs.
 ***********************************************************/
 
-import java.io.Buffer;
+import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap; 
 
 public class WordCount{
-	private BufferedReader read;
+	private BufferedReader reader;
 	private HashMap<String, Integer> wordCount;
 	
 	/*
@@ -20,7 +20,7 @@ public class WordCount{
 	* We can easily modify what is a word by simply
 	* changing this regex.
 	*/
-	private static final String REGEX = " !\'\"!.,;";
+	private static final String REGEX = " *[^A-Za-z0-9_]+";
 	
 	public WordCount(){
 		wordCount = new HashMap<String, Integer>();
@@ -29,7 +29,7 @@ public class WordCount{
 	// prepares the file to be read.
 	public void openFile(String fileName){
 		try{
-			read = new BufferedReader(new FileReader(fileName));
+			reader = new BufferedReader(new FileReader(fileName));
 		} catch(IOException ioe){
 			ioe.printStackTrace();
 		}
@@ -37,25 +37,49 @@ public class WordCount{
 	
 	// close files when done reading
 	public void closeFile(){
-		read.close();
+		try{
+			reader.close();
+		} catch(IOException ioe){
+			ioe.printStackTrace();
+		}
 	}
 	
 	// process a single line of data
 	public void processLine(String singleLine){
 		String[] words = singleLine.split(REGEX);
+		System.out.println(words.length);
 		for(String s : words){
 			int numOfWords = 0;
-			Integer wordKey = wordCount.get(s);
+			Integer wordKey = wordCount.get(s.toLowerCase());
 			// word not found
 			if(wordKey == null){
 				numOfWords = 1;
 			}
 			else{
-				// word found
-				numOfWords = wordKey;
+				// word found, increment the count
+				numOfWords = wordKey+1;
 			}
 			// insert the new word, or update the count
-			wordCount.put(s, numOfWords);
+			wordCount.put(s.toLowerCase(), numOfWords);
+		}
+	}
+	
+	public static void usage(){
+		System.out.println("Usage: java [FILE NAME]");
+	}
+	
+	public void displayMostCommon(){
+		System.out.println(wordCount);
+	}
+	
+	public void processFile(){
+		String curLine;
+		try{
+			while((curLine = reader.readLine()) != null){
+				processLine(curLine);
+			}
+		} catch(IOException ioe){
+			ioe.printStackTrace();
 		}
 	}
 	
