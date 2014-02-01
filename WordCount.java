@@ -5,16 +5,24 @@
 ***********************************************************/
 
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.InputStreamReader;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.HashMap; 
 import java.util.TreeMap;
 import java.util.ArrayList;
 import java.util.Map;
+import java.text.Collator;
+import java.util.Locale;
 
 public class WordCount{
 	private BufferedReader reader;
+	/*
+	* Using a TreeMap rather than a HashMap to more easily
+	* store case independent strings with the constructor
+	* which takes a comparator as a constructor.
+	*/
 	private TreeMap<String, Integer> wordCount;
+	private Locale userLocale;
 	
 	/*
 	* Here we are assuming that a word is any string of 
@@ -23,17 +31,32 @@ public class WordCount{
 	* We can easily modify what is a word by simply
 	* changing this regex.
 	*/
-	private static final int N_LARGEST_VALS = 11;
-	private static final String REGEX = "[^A-Za-z0-9_]+";
+	private static final String REGEX = "[^A-Za-z0-9'_]+";
+	private static final int N_LARGEST_VALS = 10;
+	
+	/*
+	* We will use a collator to pass to the TreeMap to use for
+	* comparing strings of locale type userLocale
+	*/
+	public WordCount(Locale userLocale){
+		this.userLocale = userLocale;
+		Collator localeComp = Collator.getInstance(this.userLocale);
+		localeComp.setStrength(Collator.PRIMARY);
+		wordCount = 
+		new TreeMap<String, Integer>(localeComp);
+	}
 	
 	public WordCount(){
-		wordCount = new TreeMap<String, Integer>(String.CASE_INSENSITIVE_ORDER);
+		this(Locale.getDefault());
 	}
 	
 	// prepares the file to be read.
 	public void openFile(String fileName){
 		try{
-			reader = new BufferedReader(new FileReader(fileName));
+			reader = 
+				new BufferedReader(
+					new InputStreamReader(
+						new FileInputStream(fileName),"UTF-8"));
 		} catch(IOException ioe){
 			ioe.printStackTrace();
 		}
@@ -71,61 +94,60 @@ public class WordCount{
 		System.out.println("Usage: java [FILE NAME]");
 	}
 	
-	// This method is O(n), so it is faster than sorting
+	/*
+	* We will find the largest entry in our TreeMap and print
+	* the largest entries key, then remove it from the TreeMap.
+	* This will be done N_LARGEST_VAL times, and finding the 
+	* max is O(n), so this method is N_LARGEST_VAL*O(n)=O(n).
+	*/
 	public void displayMostCommon(){
-		ArrayList<Map.Entry<String, Integer> > mostCommon;
-		mostCommon = new ArrayList<Map.Entry<String, Integer> >();
-		for(Map.Entry<String, Integer> el : wordCount.entrySet()){
-			// first add the first 10 elements sorted large to small
-			int i = 0;
-			if(mostCommon.isEmpty()){
-				mostCommon.add(el);
-			}
-			else if(i < N_LARGEST_VALS){
-				// insert the remaining elements in the correct order
-				int j = 0;
-				while(j < mostCommon.size() && el.getValue().intValue() 
-						< mostCommon.get(j).getValue().intValue()){
-					++j;
-				}
-				mostCommon.add(j, el);
-			}
-			else{
-				/*
-				* Now we can add elements to the front of the list
-				* when they are larger than the head, otherwise we
-				* can ignore them
-				*/
-				if(el.getValue().intValue() 
-						> mostCommon.get(0).getValue().intValue()){
-					mostCommon.add(el);
-				}
-			}
-		}
-		// Display the first ten elements
-		for(int i = 0; i < N_LARGEST_VALS; ++i){
-			if(i > mostCommon.size()){ break; }
-			System.out.println(mostCommon.get(i).getKey());
+		for(int i = 0; i < N_LARGEST_VALS && !wordCount.isEmpty(); ++i){
+			Map.Entry<String, Integer> curMax = keyWithMaxValue();
+			System.out.println(curMax.getKey()+"\t"+curMax.getValue());
+			wordCount.remove(curMax.getKey());
 		}
 	}
 	
+	/*
+	* This method loops through the entire tree map using a
+	* for each loop, and returns the Map.Entry element which
+	* has the largest value. This method is O(n).
+	*/
+	private Map.Entry<String, Integer> keyWithMaxValue(){
+		Map.Entry<String, Integer> maxEntry = null;
+		for(Map.Entry<String, Integer> el : wordCount.entrySet()){
+			if(maxEntry == null){
+				maxEntry = el;
+			}
+			else{
+				int elVal = el.getValue().intValue();
+				int maxVal = maxEntry.getValue().intValue();
+				if(elVal > maxVal){
+					maxEntry = el;
+				}
+			}
+		}
+		return maxEntry;
+	}
+	
+	// read each line and process it via processLine(String)
 	public void processFile(){
 		String curLine;
 		try{
 			while((curLine = reader.readLine()) != null){
-				processLine(curLine);
+				// we want to ignore any lines of only white space
+				if(!curLine.trim().isEmpty()){
+					String utfLine = new String(curLine.getBytes(), "UTF-8");
+					processLine(utfLine.trim());
+				}
 			}
 		} catch(IOException ioe){
 			ioe.printStackTrace();
 		}
 	}
 	
-	public void printMap(){
-		System.out.println(wordCount);
-	}
-	
 	public static void main(String[] args){
-		WordCount wc = new WordCount();
+		WordCount wc = new WordCount(Locale.JAPANESE);
 		// No command line argument passed in
 		if(args.length != 1){
 			usage();
@@ -133,7 +155,6 @@ public class WordCount{
 		}
 		wc.openFile(args[0]);
 		wc.processFile();
-		//wc.printMap();
 		wc.displayMostCommon();
 		wc.closeFile();
 	}
