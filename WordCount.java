@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.text.Collator;
 import java.util.Locale;
+import java.nio.charset.StandardCharsets;
 
 public class WordCount{
 	private BufferedReader reader;
@@ -31,7 +32,7 @@ public class WordCount{
 	* We can easily modify what is a word by simply
 	* changing this regex.
 	*/
-	private static final String REGEX = "[^A-Za-z0-9'_]+";
+	private static final String REGEX = "[^A-Za-z0-9'_\\p{L}]+";
 	private static final int N_LARGEST_VALS = 10;
 	
 	/*
@@ -56,7 +57,8 @@ public class WordCount{
 			reader = 
 				new BufferedReader(
 					new InputStreamReader(
-						new FileInputStream(fileName),"UTF-8"));
+						new FileInputStream(fileName),
+							StandardCharsets.UTF_8));
 		} catch(IOException ioe){
 			ioe.printStackTrace();
 		}
@@ -101,6 +103,7 @@ public class WordCount{
 	* max is O(n), so this method is N_LARGEST_VAL*O(n)=O(n).
 	*/
 	public void displayMostCommon(){
+	System.out.println(wordCount.size());
 		for(int i = 0; i < N_LARGEST_VALS && !wordCount.isEmpty(); ++i){
 			Map.Entry<String, Integer> curMax = keyWithMaxValue();
 			System.out.println(curMax.getKey()+"\t"+curMax.getValue());
@@ -139,6 +142,8 @@ public class WordCount{
 				if(!curLine.trim().isEmpty()){
 					String utfLine = new String(curLine.getBytes(), "UTF-8");
 					processLine(utfLine.trim());
+					int i = 1;
+					System.out.println(i++ + utfLine);
 				}
 			}
 		} catch(IOException ioe){
